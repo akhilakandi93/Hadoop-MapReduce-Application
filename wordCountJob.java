@@ -1,29 +1,45 @@
 package myPackage;
 
-import java.io.IOException;
-import java.util.Iterator;
-
+import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.MapReduceBase;
-import org.apache.hadoop.mapred.OutputCollector;
-import org.apache.hadoop.mapred.Reducer;
-import org.apache.hadoop.mapred.Reporter;
+import org.apache.hadoop.mapred.FileInputFormat;
+import org.apache.hadoop.mapred.FileOutputFormat;
+import org.apache.hadoop.mapred.JobClient;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 
-public class wordCountReducer extends MapReduceBase implements Reducer<Text,IntWritable,Text,IntWritable>{
+
+
+
+public class wordCountJob extends Configured implements Tool{
 
 	@Override
-	public void reduce(Text key, Iterator<IntWritable> values,
-			OutputCollector<Text, IntWritable> output, Reporter r)
-			throws IOException {
-		// TODO Auto-generated method stub
-		int count=0;
-		while(values.hasNext()){
-			IntWritable i=values.next();
-			count+=i.get();
+	public int run(String[] args) throws Exception {
+		if(args.length<2){
+			System.out.println("Please give input and output directories properly");
+			return -1;
 		}
-		output.collect(key, new IntWritable(count));
+		JobConf conf=new JobConf(wordCount.class);
+		FileInputFormat.setInputPaths(conf, new Path(args[0]));
+		FileOutputFormat.setOutputPath(conf, new Path(args[1]));
+		
+		conf.setMapperClass(wordCountMapper.class);
+		conf.setReducerClass(wordCountReducer.class);
+		conf.setMapOutputKeyClass(Text.class);
+		conf.setMapOutputValueClass(IntWritable.class);
+		conf.setOutputKeyClass(Text.class);
+		conf.setOutputValueClass(IntWritable.class);
+		JobClient.runJob(conf);
+		
+		return 0;
 	}
 	
+	public static void main(String args[]) throws Exception{
+		int exitCode=ToolRunner.run(new wordCount(), args);
+		System.exit(exitCode);
+	}
 
 }
